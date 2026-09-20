@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>Lead Tracker</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #151515;
+    --surface-2: #1f1f1f;
+    --border: #2a2a2a;
+    --text: #f5f5f5;
+    --text-dim: #999;
+    --text-faint: #666;
+    --accent: #F26C38;
+    --accent-dim: rgba(242,108,56,0.15);
+    --hot: #ef4444;
+    --warm: #f59e0b;
+    --cold: #3b82f6;
+    --green: #10b981;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 120px; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .header-left { display: flex; flex-direction: column; gap: 6px; }
+  .logo img { height: 24px; }
+  .logo { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .event-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
+  .count { font-size: 12px; color: var(--text-dim); }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); margin-right: 6px; vertical-align: middle; }
+  .status-dot.online { background: var(--green); }
+  .status-dot.offline { background: var(--hot); }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; padding: 10px; text-align: center;
+    background: transparent; border: none; color: var(--text-dim);
+    font-size: 14px; font-weight: 600; border-radius: 7px;
+    cursor: pointer; font-family: inherit;
+  }
+  .tab.active { background: var(--accent-dim); color: var(--accent); }
+  form { display: flex; flex-direction: column; gap: 14px; }
+  label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .label-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .label-opt { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
+  input[type="text"], textarea, select {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); padding: 14px; border-radius: 10px;
+    font-size: 16px; font-family: inherit; width: 100%;
+    -webkit-appearance: none; appearance: none;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { min-height: 90px; resize: vertical; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .seg.two { grid-template-columns: 1fr 1fr; }
+  .seg.four { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .seg button {
+    padding: 12px 8px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .seg button.on[data-val="Hot"]  { background: var(--hot); color: white; border-color: var(--hot); }
+  .seg button.on[data-val="Warm"] { background: var(--warm); color: #1a1a1a; border-color: var(--warm); }
+  .seg button.on[data-val="Cold"] { background: var(--cold); color: white; border-color: var(--cold); }
+  .seg button.on[data-val="Yes"]  { background: var(--green); color: white; border-color: var(--green); }
+  .seg button.on[data-val="No"]   { background: var(--surface-2); color: var(--text); border-color: var(--text-dim); }
+  .seg button.on[data-val="LPP Event"]  { background: var(--accent); color: white; border-color: var(--accent); }
+  .seg button.on[data-val="Table Conversation"] { background: var(--accent); color: white; border-color: var(--accent); }
+  .seg button.on[data-val="Other"] { background: var(--accent); color: white; border-color: var(--accent); }
+  .seg.multi button.on { background: var(--accent); color: white; border-color: var(--accent); }
+  .save {
+    padding: 16px; background: var(--accent); color: white;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 700;
+    cursor: pointer; font-family: inherit; margin-top: 6px;
+  }
+  .save:disabled { opacity: 0.5; }
+  .field-input { position: relative; }
+  .field-input input, .field-input textarea { padding-right: 42px; }
+  .mic-btn {
+    position: absolute; right: 2px; top: 0;
+    background: transparent; border: none; color: var(--text-dim);
+    font-size: 19px; line-height: 1; padding: 12px 10px; cursor: pointer;
+  }
+  .mic-btn.listening { color: var(--accent); animation: mic-pulse 1s ease-in-out infinite; }
+  @keyframes mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .voice-hint { font-size: 11px; color: var(--text-faint); text-align: center; margin: -10px 0 6px; }
+  .scan-row { margin-bottom: 4px; }
+  .scan-btn {
+    width: 100%; padding: 14px; background: var(--surface);
+    border: 1px dashed var(--accent); color: var(--accent);
+    border-radius: 10px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .scan-btn.scanning { opacity: 0.55; pointer-events: none; }
+  .scan-hint { font-size: 11px; color: var(--text-faint); text-align: center; margin: -8px 0 4px; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: white; padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .lead {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-bottom: 10px;
+  }
+  .lead-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .lead-name { font-size: 16px; font-weight: 700; margin: 0; }
+  .lead-meta { font-size: 13px; color: var(--text-dim); margin: 2px 0 0; }
+  .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .badge {
+    font-size: 10px; padding: 3px 7px; border-radius: 6px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .b-hot { background: var(--hot); color: white; }
+  .b-warm { background: var(--warm); color: #1a1a1a; }
+  .b-cold { background: var(--cold); color: white; }
+  .b-fu { background: var(--green); color: white; }
+  .b-by { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+  .b-product { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(242,108,56,0.3); }
+  .b-context { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+  .lead-notes { font-size: 13px; color: var(--text); margin-top: 10px; line-height: 1.5; white-space: pre-wrap; }
+  .lead-techstack { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
+  .lead-time { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
+  .del {
+    background: transparent; border: none; color: var(--text-faint);
+    font-size: 18px; cursor: pointer; padding: 4px 8px;
+  }
+  .empty { text-align: center; color: var(--text-faint); padding: 40px 20px; font-size: 14px; }
+  .filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-row select { flex: 1; min-width: 90px; padding: 10px; font-size: 13px; }
+  .export {
+    width: 100%; padding: 12px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; margin-top: 12px;
+  }
+  .me-banner {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px;
+  }
+  .me-banner span { color: var(--text-dim); }
+  .me-banner b { color: var(--accent); }
+  .me-banner button {
+    background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .hidden { display: none !important; }
+  .lead-actions { display: flex; align-items: center; gap: 2px; }
+  .edit, .contact {
+    background: transparent; border: none; color: var(--text-faint);
+    font-size: 15px; cursor: pointer; padding: 4px 8px;
+  }
+  .b-dup { background: rgba(245,158,11,0.15); color: var(--warm); border: 1px solid rgba(245,158,11,0.35); }
+  .lead-linkedin-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .mycard-output { text-align: center; margin-top: 20px; }
+  .mycard-qr-wrap {
+    display: inline-block; background: #fff; padding: 16px; border-radius: 14px;
+    line-height: 0;
+  }
+  .mycard-name { font-size: 17px; font-weight: 700; margin: 14px 0 2px; }
+  .mycard-meta { font-size: 13px; color: var(--text-dim); margin: 4px 0 0; }
+  .mycard-notes { font-size: 13px; color: var(--text); margin: 10px 0 0; white-space: pre-wrap; }
+  .mycard-output .scan-hint { margin-top: 14px; }
+  .cancel-edit {
+    padding: 12px; background: transparent; border: 1px solid var(--border);
+    color: var(--text-dim); border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; margin-top: 4px;
+  }
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.15s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; max-width: 360px; width: 100%;
+  }
+  .modal-msg { margin: 0 0 14px; font-size: 15px; line-height: 1.4; color: var(--text); }
+  .modal-input-wrap input {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px; border-radius: 8px; font-size: 16px; font-family: inherit; width: 100%;
+    margin-bottom: 14px;
+  }
+  .modal-select-wrap select {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 12px; border-radius: 8px; font-size: 16px; font-family: inherit; width: 100%;
+    margin-bottom: 14px; -webkit-appearance: none; appearance: none;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn {
+    padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+  }
+  .modal-btn.modal-confirm { background: var(--accent); border-color: var(--accent); color: white; }
+  .modal-btn.modal-confirm.modal-danger { background: var(--hot); border-color: var(--hot); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-left">
+      <div class="logo" id="company-logo">Your Company</div>
+      <div class="event-name" id="event-name">No event selected</div>
+    </div>
+    <div class="count"><span class="status-dot" id="status-dot"></span><span id="count">0 leads</span></div>
+  </header>
+
+  <div class="me-banner">
+    <span>Logging as <b id="me-name">—</b></span>
+    <button onclick="setMe()">Change</button>
+  </div>
+
+  <div class="me-banner">
+    <span>Event <b id="event-display-name">—</b></span>
+    <button onclick="setEvent()">Change</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-view="capture" onclick="switchView('capture')">+ Capture</button>
+    <button class="tab" data-view="leads" onclick="switchView('leads')">All Leads</button>
+    <button class="tab" data-view="mycard" onclick="switchView('mycard')">My Card</button>
+  </div>
+
+  <section id="view-capture">
+    <form id="lead-form" onsubmit="return saveLead(event)">
+      <div class="scan-row">
+        <input type="file" id="card-input" accept="image/*" capture="environment" style="display:none" onchange="handleCardFile(event)">
+        <button type="button" class="scan-btn" id="scan-btn" onclick="document.getElementById('card-input').click()">📇 Scan Business Card</button>
+      </div>
+      <div class="voice-hint" id="voice-hint" style="display:none;">Tap 🎤 on any field and speak — tap again to stop.</div>
+      <div class="field">
+        <label>First Name</label>
+        <div class="field-input">
+          <input type="text" id="fname" required autocomplete="off">
+          <button type="button" class="mic-btn" data-target="fname" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Last Name</label>
+        <div class="field-input">
+          <input type="text" id="lname" required autocomplete="off">
+          <button type="button" class="mic-btn" data-target="lname" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Company</label>
+        <div class="field-input">
+          <input type="text" id="company" required autocomplete="off">
+          <button type="button" class="mic-btn" data-target="company" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Role / Title</label>
+        <div class="field-input">
+          <input type="text" id="role" autocomplete="off">
+          <button type="button" class="mic-btn" data-target="role" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <div class="field-input">
+          <input type="text" id="phone" autocomplete="off">
+          <button type="button" class="mic-btn" data-target="phone" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <div class="field-input">
+          <input type="text" id="email" autocomplete="off">
+          <button type="button" class="mic-btn" data-target="email" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>LinkedIn URL</label>
+        <input type="text" id="linkedin" autocomplete="off" placeholder="linkedin.com/in/...">
+      </div>
+      <div class="field">
+        <label>Interest</label>
+        <div class="seg" id="interest-seg">
+          <button type="button" data-val="Hot">Hot</button>
+          <button type="button" data-val="Warm">Warm</button>
+          <button type="button" data-val="Cold">Cold</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Product Interest</label>
+        <div class="seg four multi" id="product-seg"></div>
+      </div>
+      <div class="field">
+        <label>Current Tech Stack / Status</label>
+        <div class="field-input">
+          <input type="text" id="techstack" autocomplete="off" placeholder="e.g. Relativity, manual process, evaluating...">
+          <button type="button" class="mic-btn" data-target="techstack" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Follow-Up</label>
+        <div class="seg two" id="followup-seg">
+          <button type="button" data-val="Yes">Yes</button>
+          <button type="button" data-val="No">No</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Notes (what / why / how)</label>
+        <div class="field-input">
+          <textarea id="notes" placeholder="Pain points, timeline, next steps..."></textarea>
+          <button type="button" class="mic-btn" data-target="notes" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <button type="submit" class="save" id="save-btn">Save Lead</button>
+      <button type="button" class="cancel-edit hidden" id="cancel-edit-btn" onclick="cancelEdit()">Cancel Edit</button>
+    </form>
+  </section>
+
+  <section id="view-leads" style="display:none;">
+    <div class="filter-row">
+      <select id="filter-interest" onchange="renderLeads()">
+        <option value="">All interest</option>
+        <option value="Hot">Hot only</option>
+        <option value="Warm">Warm only</option>
+        <option value="Cold">Cold only</option>
+      </select>
+      <select id="filter-product" onchange="renderLeads()">
+        <option value="">All products</option>
+      </select>
+      <select id="filter-fu" onchange="renderLeads()">
+        <option value="">All</option>
+        <option value="Yes">Follow-up</option>
+      </select>
+      <select id="filter-by" onchange="renderLeads()">
+        <option value="">Everyone</option>
+      </select>
+    </div>
+    <div id="leads-list"></div>
+    <button class="export" onclick="exportCSV()">Export CSV</button>
+  </section>
+
+  <section id="view-mycard" style="display:none;">
+    <div class="empty" id="mycard-empty">Set your name above (Logging as &middot; Change) to generate your digital card.</div>
+    <div id="mycard-form" class="hidden">
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="card-name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Company</label>
+        <input type="text" id="card-company" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Your Title / Role</label>
+        <input type="text" id="card-title" autocomplete="off" placeholder="e.g. Account Executive">
+      </div>
+      <div class="field">
+        <label>Your Phone</label>
+        <input type="text" id="card-phone" autocomplete="off" placeholder="e.g. (555) 123-4567">
+      </div>
+      <div class="field">
+        <label>Your Email</label>
+        <input type="text" id="card-email" autocomplete="off" placeholder="you@yourcompany.com">
+      </div>
+      <div class="field">
+        <label>Your LinkedIn URL</label>
+        <input type="text" id="card-linkedin" autocomplete="off" placeholder="linkedin.com/in/...">
+      </div>
+      <div class="field">
+        <div class="label-row"><label>Notes</label><span class="label-opt">Optional</span></div>
+        <textarea id="card-notes" placeholder="Anything you want them to see, e.g. what you cover, a calendar link..."></textarea>
+      </div>
+      <button type="button" class="save" onclick="saveMyCard()">Save &amp; Generate QR</button>
+      <div id="mycard-output" class="mycard-output hidden">
+        <div class="mycard-qr-wrap"><div id="mycard-qr"></div></div>
+        <p class="mycard-name" id="mycard-name"></p>
+        <p class="mycard-meta" id="mycard-meta"></p>
+        <p class="mycard-meta" id="mycard-linkedin"></p>
+        <p class="mycard-notes" id="mycard-notes"></p>
+        <p class="scan-hint">Hand your phone over, or let them scan &mdash; it saves straight to their contacts.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <p class="modal-msg" id="modal-msg"></p>
+    <div class="modal-select-wrap hidden" id="modal-select-wrap">
+      <select id="modal-select"></select>
+    </div>
+    <div class="modal-input-wrap hidden" id="modal-input-wrap">
+      <input type="text" id="modal-input" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn" id="modal-cancel">Cancel</button>
+      <button type="button" class="modal-btn modal-confirm" id="modal-confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+    onSnapshot, query, where, setDoc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // Create your own Firebase project at https://console.firebase.google.com
+  // (Firestore in Native mode, no auth needed) and paste its config here.
+  // Project Settings → General → Your apps → SDK setup and configuration.
+  const firebaseConfig = {
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_PROJECT.firebaseapp.com",
+    projectId:         "YOUR_PROJECT",
+    storageBucket:     "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId:             "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const leadsCol = collection(db, "leadtracker-leads");
+  const profilesCol = collection(db, "leadtracker-profiles");
+  const eventsCol = collection(db, "leadtracker-events");
+
+  window._fb = { db, leadsCol, profilesCol, eventsCol, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where };
+  window.dispatchEvent(new Event('fb-ready'));
+</script>
+
+<script>
+let leads = [];
+let me = '';
+let interest = '';
+let followup = '';
+let products = [];
+let editingId = null;
+let activeRecognition = null;
+let activeMicBtn = null;
+let myCardQR = null;
+let cardProfiles = {};
+let currentEvent = '';
+let eventsMap = {};
+let unsubscribeLeads = null;
+
+// ============================================================
+// CUSTOMIZE FOR YOUR BUSINESS — this is the only block you should
+// need to touch to re-brand this app for a new company/use case.
+// ============================================================
+const APP_CONFIG = {
+  companyName: 'Your Company',
+  emailDomain: '@yourcompany.com',
+  // Shown as multi-select tags on the capture form and as a filter
+  // in "All Leads". Rename/replace freely — these are just examples.
+  productOptions: ['Category A', 'Category B', 'Category C', 'Category D'],
+  // Pre-fills the "Notes" field on My Card. Leave '' for no default.
+  notesDefault: ''
+};
+// ============================================================
+
+const LINKEDIN_PREFIX = 'https://www.linkedin.com/in/';
+const EMAIL_SUFFIX = APP_CONFIG.emailDomain;
+const NOTES_DEFAULT = APP_CONFIG.notesDefault;
+
+function renderProductOptions() {
+  const segHtml = APP_CONFIG.productOptions
+    .map(p => '<button type="button" data-val="' + esc(p) + '">' + esc(p) + '</button>').join('');
+  document.getElementById('product-seg').innerHTML = segHtml;
+
+  const filterHtml = '<option value="">All products</option>' +
+    APP_CONFIG.productOptions.map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
+  document.getElementById('filter-product').innerHTML = filterHtml;
+}
+
+async function init() {
+  document.getElementById('company-logo').textContent = APP_CONFIG.companyName;
+  renderProductOptions();
+  me = localStorage.getItem('leadtracker_me') || '';
+  currentEvent = localStorage.getItem('leadtracker_event') || '';
+  if (me) document.getElementById('me-name').textContent = me;
+  updateEventDisplay();
+  setupSegments();
+
+  if (!me) await setMe();
+  if (!currentEvent) await setEvent();
+}
+
+function normalizeName(name) {
+  return (name || '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/\//g, '-');
+}
+
+function getKnownNames() {
+  const names = new Set();
+  Object.values(cardProfiles).forEach(p => (p.loginName || p.name) && names.add(p.loginName || p.name));
+  leads.forEach(l => l.by && names.add(l.by));
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+function getKnownEventNames() {
+  return Object.values(eventsMap).map(e => e.name).sort((a, b) => a.localeCompare(b));
+}
+
+function updateEventDisplay() {
+  document.getElementById('event-name').textContent = currentEvent || 'No event selected';
+  document.getElementById('event-display-name').textContent = currentEvent || '—';
+  document.title = (currentEvent || APP_CONFIG.companyName) + ' — Lead Tracker';
+}
+
+async function setEvent() {
+  const name = await showModal({
+    message: "Which event are you at?",
+    withInput: true,
+    selectOptions: getKnownEventNames(),
+    defaultValue: currentEvent || '',
+    confirmLabel: 'Save',
+    newOptionLabel: '+ Add new event',
+    placeholderLabel: 'Select or add your event'
+  });
+  if (name) {
+    currentEvent = name;
+    localStorage.setItem('leadtracker_event', currentEvent);
+    updateEventDisplay();
+
+    const key = normalizeName(currentEvent);
+    if (!eventsMap[key]) {
+      eventsMap[key] = { name: currentEvent };
+      try {
+        const { db, doc, setDoc } = window._fb;
+        await setDoc(doc(db, 'leadtracker-events', key), { name: currentEvent, createdAt: Date.now() });
+      } catch (err) {
+        console.error('Could not save event:', err);
+      }
+    }
+    subscribeLeads();
+  }
+}
+
+function subscribeProfiles() {
+  const { profilesCol, onSnapshot } = window._fb;
+  onSnapshot(profilesCol, snap => {
+    cardProfiles = {};
+    snap.docs.forEach(d => { cardProfiles[d.id] = d.data(); });
+    if (document.getElementById('view-mycard').style.display !== 'none') renderMyCard();
+  }, err => console.error('Profile snapshot error:', err));
+}
+
+function subscribeEvents() {
+  const { eventsCol, onSnapshot } = window._fb;
+  onSnapshot(eventsCol, snap => {
+    eventsMap = {};
+    snap.docs.forEach(d => { eventsMap[d.id] = d.data(); });
+  }, err => console.error('Events snapshot error:', err));
+}
+
+window.addEventListener('fb-ready', () => {
+  subscribeProfiles();
+  subscribeEvents();
+  subscribeLeads();
+});
+
+const MODAL_NEW_OPTION = '__new__';
+
+function showModal({
+  message, withInput = false, selectOptions = null, newOptionLabel = '+ Add new person',
+  placeholderLabel = 'Select or add an option',
+  defaultValue = '', confirmLabel = 'Confirm', danger = false
+}) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modal-overlay');
+    const msgEl = document.getElementById('modal-msg');
+    const selectWrap = document.getElementById('modal-select-wrap');
+    const select = document.getElementById('modal-select');
+    const inputWrap = document.getElementById('modal-input-wrap');
+    const input = document.getElementById('modal-input');
+    const confirmBtn = document.getElementById('modal-confirm');
+    const cancelBtn = document.getElementById('modal-cancel');
+
+    const hasOptions = withInput && selectOptions && selectOptions.length > 0;
+
+    msgEl.textContent = message;
+    confirmBtn.textContent = confirmLabel;
+    confirmBtn.classList.toggle('modal-danger', danger);
+    selectWrap.classList.toggle('hidden', !hasOptions);
+    overlay.classList.add('show');
+
+    function showInputForNewEntry(focus) {
+      inputWrap.classList.remove('hidden');
+      input.value = '';
+      if (focus) setTimeout(() => input.focus(), 50);
+    }
+
+    if (hasOptions) {
+      const matched = selectOptions.find(n => normalizeName(n) === normalizeName(defaultValue));
+      const placeholder = matched ? '' : '<option value="" disabled selected>' + esc(placeholderLabel) + '</option>';
+      select.innerHTML = placeholder +
+        selectOptions.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('') +
+        '<option value="' + MODAL_NEW_OPTION + '">' + esc(newOptionLabel) + '</option>';
+      select.value = matched || '';
+      inputWrap.classList.toggle('hidden', select.value !== MODAL_NEW_OPTION);
+      if (select.value === MODAL_NEW_OPTION) showInputForNewEntry(false);
+      else input.value = matched || '';
+      select.onchange = () => {
+        if (select.value === MODAL_NEW_OPTION) showInputForNewEntry(true);
+        else { inputWrap.classList.add('hidden'); input.value = select.value; }
+      };
+    } else {
+      inputWrap.classList.toggle('hidden', !withInput);
+      input.value = defaultValue;
+      if (withInput) setTimeout(() => input.focus(), 50);
+    }
+
+    function cleanup(result) {
+      overlay.classList.remove('show');
+      confirmBtn.removeEventListener('click', onConfirmClick);
+      cancelBtn.removeEventListener('click', onCancelClick);
+      select.onchange = null;
+      resolve(result);
+    }
+    function onConfirmClick() {
+      if (!withInput) { cleanup(true); return; }
+      if (hasOptions && !select.value) return; // placeholder still showing — make them choose
+      const value = hasOptions && select.value !== MODAL_NEW_OPTION ? select.value : input.value.trim();
+      cleanup(value || null);
+    }
+    function onCancelClick() { cleanup(withInput ? null : false); }
+    confirmBtn.addEventListener('click', onConfirmClick);
+    cancelBtn.addEventListener('click', onCancelClick);
+  });
+}
+
+async function setMe() {
+  const name = await showModal({
+    message: "Your name (so the team knows who logged each lead):",
+    withInput: true,
+    selectOptions: getKnownNames(),
+    defaultValue: me || '',
+    confirmLabel: 'Save',
+    placeholderLabel: 'Select or add your name'
+  });
+  if (name) {
+    me = name;
+    localStorage.setItem('leadtracker_me', me);
+    document.getElementById('me-name').textContent = me;
+    renderMyCard();
+  }
+}
+
+function setupSegments() {
+  // Single-select segments
+  ['interest-seg', 'followup-seg'].forEach(segId => {
+    document.querySelectorAll('#' + segId + ' button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#' + segId + ' button').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        if (segId === 'interest-seg') interest = btn.dataset.val;
+        else if (segId === 'followup-seg') followup = btn.dataset.val;
+      });
+    });
+  });
+  // Multi-select: product interest
+  document.querySelectorAll('#product-seg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('on');
+      const val = btn.dataset.val;
+      if (products.includes(val)) products = products.filter(p => p !== val);
+      else products.push(val);
+    });
+  });
+}
+
+async function handleCardFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const btn = document.getElementById('scan-btn');
+  const originalLabel = btn.textContent;
+  btn.classList.add('scanning');
+  btn.textContent = 'Scanning...';
+
+  try {
+    const { base64, mediaType } = await resizeImageToBase64(file);
+    const res = await fetch('/.netlify/functions/parse-card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, mediaType })
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error || ('Server error (' + res.status + ')'));
+    }
+    const data = await res.json();
+    document.getElementById('fname').value = data.first_name || '';
+    document.getElementById('lname').value = data.last_name || '';
+    document.getElementById('company').value = data.company || '';
+    document.getElementById('role').value = data.role || '';
+    document.getElementById('phone').value = data.phone || '';
+    document.getElementById('email').value = data.email || '';
+    toast('Card scanned — check the fields');
+  } catch (err) {
+    console.error(err);
+    toast('Scan failed: ' + err.message, true);
+  }
+
+  btn.classList.remove('scanning');
+  btn.textContent = originalLabel;
+  event.target.value = ''; // allow re-selecting the same file
+}
+
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function toggleDictation(btn) {
+  const field = document.getElementById(btn.dataset.target);
+  if (!field) return;
+
+  if (!SpeechRec) {
+    toast("Voice input isn't supported in this browser", true);
+    return;
+  }
+
+  // Tapping the mic that's already listening stops it.
+  if (activeRecognition && activeMicBtn === btn) {
+    activeRecognition.stop();
+    return;
+  }
+  // Switching mics: stop whichever one was running.
+  if (activeRecognition) activeRecognition.stop();
+
+  const recognition = new SpeechRec();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    btn.classList.add('listening');
+    document.getElementById('voice-hint').style.display = 'block';
+  };
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript.trim();
+    if (!transcript) return;
+    const sep = field.value && !/\s$/.test(field.value) ? ' ' : '';
+    field.value = (field.value + sep + transcript).trim();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      toast('Voice input error: ' + e.error, true);
+    }
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('listening');
+    if (activeMicBtn === btn) { activeRecognition = null; activeMicBtn = null; }
+  };
+
+  activeRecognition = recognition;
+  activeMicBtn = btn;
+  recognition.start();
+}
+
+function resizeImageToBase64(file) {
+  const MAX_DIM = 1200;
+  const QUALITY = 0.75;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not decode image'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const scale = MAX_DIM / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+        resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function subscribeLeads() {
+  if (unsubscribeLeads) { unsubscribeLeads(); unsubscribeLeads = null; }
+  if (!currentEvent) {
+    leads = [];
+    updateCount();
+    renderLeads();
+    return;
+  }
+  const { leadsCol, onSnapshot, query, where } = window._fb;
+  const q = query(leadsCol, where('event', '==', currentEvent));
+  unsubscribeLeads = onSnapshot(q, snap => {
+    leads = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.ts - a.ts);
+    setStatus(true);
+    updateCount();
+    refreshByFilter();
+    renderLeads();
+  }, err => {
+    console.error('Snapshot error:', err);
+    setStatus(false);
+    toast('Connection error', true);
+  });
+}
+
+function setStatus(online) {
+  const dot = document.getElementById('status-dot');
+  dot.classList.toggle('online', online);
+  dot.classList.toggle('offline', !online);
+}
+
+function updateCount() {
+  document.getElementById('count').textContent = leads.length + ' lead' + (leads.length === 1 ? '' : 's');
+}
+
+function refreshByFilter() {
+  const sel = document.getElementById('filter-by');
+  const current = sel.value;
+  const names = [...new Set(leads.map(l => l.by).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Everyone</option>' +
+    names.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+  if (names.includes(current)) sel.value = current;
+}
+
+async function saveLead(e) {
+  e.preventDefault();
+  if (!me) { await setMe(); if (!me) return false; }
+  if (!currentEvent) { await setEvent(); if (!currentEvent) return false; }
+  if (!interest) { toast('Pick interest level', true); return false; }
+  if (!followup) { toast('Pick follow-up', true); return false; }
+  if (!window._fb) { toast('Not connected yet', true); return false; }
+
+  const fields = {
+    fname: document.getElementById('fname').value.trim(),
+    lname: document.getElementById('lname').value.trim(),
+    company: document.getElementById('company').value.trim(),
+    role: document.getElementById('role').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    linkedin: document.getElementById('linkedin').value.trim(),
+    interest,
+    products: products.slice(),
+    techstack: document.getElementById('techstack').value.trim(),
+    followup,
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+
+  try {
+    const { leadsCol, addDoc, db, doc, updateDoc } = window._fb;
+    if (editingId) {
+      btn.textContent = 'Updating...';
+      await updateDoc(doc(db, 'leadtracker-leads', editingId), {
+        ...fields,
+        lastEditedBy: me,
+        lastEditedTs: Date.now()
+      });
+      toast('Lead updated');
+      cancelEdit();
+    } else {
+      btn.textContent = 'Saving...';
+      await addDoc(leadsCol, { ts: Date.now(), by: me, event: currentEvent, ...fields });
+      document.getElementById('lead-form').reset();
+      document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
+      interest = ''; followup = ''; products = [];
+      toast('Saved');
+    }
+  } catch (err) {
+    console.error(err);
+    toast((editingId ? 'Update' : 'Save') + ' failed: ' + err.message, true);
+  }
+
+  btn.disabled = false;
+  btn.textContent = editingId ? 'Update Lead' : 'Save Lead';
+  return false;
+}
+
+function startEdit(id) {
+  const l = leads.find(x => x.id === id);
+  if (!l) return;
+  editingId = id;
+
+  document.getElementById('fname').value = l.fname || '';
+  document.getElementById('lname').value = l.lname || '';
+  document.getElementById('company').value = l.company || '';
+  document.getElementById('role').value = l.role || '';
+  document.getElementById('phone').value = l.phone || '';
+  document.getElementById('email').value = l.email || '';
+  document.getElementById('linkedin').value = l.linkedin || '';
+  document.getElementById('techstack').value = l.techstack || '';
+  document.getElementById('notes').value = l.notes || '';
+
+  interest = l.interest || '';
+  followup = l.followup || '';
+  products = (l.products || []).slice();
+  document.querySelectorAll('#interest-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === interest));
+  document.querySelectorAll('#followup-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === followup));
+  document.querySelectorAll('#product-seg button').forEach(b => b.classList.toggle('on', products.includes(b.dataset.val)));
+
+  document.getElementById('save-btn').textContent = 'Update Lead';
+  document.getElementById('cancel-edit-btn').classList.remove('hidden');
+  switchView('capture');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function cancelEdit() {
+  editingId = null;
+  document.getElementById('lead-form').reset();
+  document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
+  interest = ''; followup = ''; products = [];
+  document.getElementById('save-btn').textContent = 'Save Lead';
+  document.getElementById('cancel-edit-btn').classList.add('hidden');
+}
+
+function renderLeads() {
+  const list = document.getElementById('leads-list');
+  const fInt = document.getElementById('filter-interest').value;
+  const fProd = document.getElementById('filter-product').value;
+  const fFu = document.getElementById('filter-fu').value;
+  const fBy = document.getElementById('filter-by').value;
+  let filtered = leads;
+  if (fInt) filtered = filtered.filter(l => l.interest === fInt);
+  if (fProd) filtered = filtered.filter(l => (l.products || []).includes(fProd));
+  if (fFu) filtered = filtered.filter(l => l.followup === fFu);
+  if (fBy) filtered = filtered.filter(l => l.by === fBy);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">No leads yet. Capture your first one.</div>';
+    return;
+  }
+
+  const dupeCounts = {};
+  leads.forEach(l => { const k = dedupeKey(l); dupeCounts[k] = (dupeCounts[k] || 0) + 1; });
+
+  list.innerHTML = filtered.map(l => {
+    const time = new Date(l.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const intClass = 'b-' + (l.interest || '').toLowerCase();
+    const prods = (l.products || []).map(p => '<span class="badge b-product">' + esc(p) + '</span>').join('');
+    const dupeCount = dupeCounts[dedupeKey(l)];
+    const dupeBadge = dupeCount > 1 ? '<span class="badge b-dup">Possible duplicate &times;' + dupeCount + '</span>' : '';
+    const editedNote = l.lastEditedBy ? ' &middot; edited by ' + esc(l.lastEditedBy) : '';
+    return '<div class="lead">' +
+      '<div class="lead-head"><div>' +
+        '<p class="lead-name">' + esc(l.fname) + ' ' + esc(l.lname) + '</p>' +
+        '<p class="lead-meta">' + esc(l.company) + (l.role ? ' &middot; ' + esc(l.role) : '') + '</p>' +
+        ((l.phone || l.email) ? '<p class="lead-meta">' + [l.phone, l.email].filter(Boolean).map(esc).join(' &middot; ') + '</p>' : '') +
+        (l.linkedin ? '<p class="lead-meta"><a href="' + esc(linkedinHref(l.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">LinkedIn &#8599;</a></p>' : '') +
+      '</div>' +
+      '<div class="lead-actions">' +
+        '<button class="contact" onclick="addLeadToContacts(\'' + l.id + '\')" title="Save to Contacts">&#128100;</button>' +
+        '<button class="edit" onclick="startEdit(\'' + l.id + '\')" title="Edit">&#9998;</button>' +
+        '<button class="del" onclick="delLead(\'' + l.id + '\')" title="Delete">&times;</button>' +
+      '</div></div>' +
+      '<div class="badges">' +
+        '<span class="badge ' + intClass + '">' + esc(l.interest) + '</span>' +
+        prods +
+        (l.followup === 'Yes' ? '<span class="badge b-fu">Follow-up</span>' : '') +
+        '<span class="badge b-by">' + esc(l.by) + '</span>' +
+        dupeBadge +
+      '</div>' +
+      (l.techstack ? '<div class="lead-techstack">Tech: ' + esc(l.techstack) + '</div>' : '') +
+      (l.notes ? '<div class="lead-notes">' + esc(l.notes) + '</div>' : '') +
+      '<div class="lead-time">' + time + editedNote + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function addLeadToContacts(id) {
+  const l = leads.find(x => x.id === id);
+  if (!l) return;
+
+  const nameParts = [l.fname, l.lname].filter(Boolean).join(' ').trim();
+  const vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'N:' + (l.lname || '') + ';' + (l.fname || '') + ';;;',
+    'FN:' + (nameParts || 'Unknown'),
+    l.company ? 'ORG:' + l.company : '',
+    l.role ? 'TITLE:' + l.role : '',
+    l.phone ? 'TEL;TYPE=CELL:' + l.phone : '',
+    l.email ? 'EMAIL:' + l.email : '',
+    l.linkedin ? 'URL;TYPE=LinkedIn:' + linkedinHref(l.linkedin) : '',
+    l.notes ? 'NOTE:' + l.notes.replace(/\n/g, '\\n') : '',
+    'END:VCARD'
+  ].filter(Boolean).join('\n');
+
+  const blob = new Blob([vcard], { type: 'text/vcard' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (nameParts || 'contact') + '.vcf';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function delLead(id) {
+  const ok = await showModal({
+    message: "Delete this lead? This can't be undone.",
+    confirmLabel: 'Delete',
+    danger: true
+  });
+  if (!ok) return;
+  try {
+    const { db, doc, deleteDoc } = window._fb;
+    await deleteDoc(doc(db, 'leadtracker-leads', id));
+    toast('Deleted');
+  } catch (e) {
+    console.error(e);
+    toast('Delete failed', true);
+  }
+}
+
+// Groups leads that are almost certainly the same person: matched by email
+// when present, otherwise by normalized name + company. Used only at export
+// time — the source records in Firestore are never merged or altered.
+function dedupeKey(l) {
+  const norm = s => (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const email = norm(l.email);
+  if (email) return 'email:' + email;
+  return 'name:' + norm(l.fname) + '|' + norm(l.lname) + '|' + norm(l.company);
+}
+
+// Merges a group of duplicate captures into one export row. Contact fields
+// are standardized to the most complete value seen; fields that reflect a
+// rep's own read on the lead (interest, products, tech stack, follow-up,
+// notes) are kept per-rep when reps disagree, so nothing is silently dropped.
+function mergeLeadGroup(group) {
+  const sorted = group.slice().sort((a, b) => a.ts - b.ts);
+
+  const pickBest = (field) => {
+    let best = '';
+    sorted.forEach(l => {
+      const v = (l[field] || '').trim();
+      if (v.length > best.length) best = v;
+    });
+    return best;
+  };
+
+  const perRep = (field, fmt) => {
+    const segs = [];
+    const seen = new Set();
+    sorted.forEach(l => {
+      const val = fmt ? fmt(l[field]) : (l[field] || '');
+      if (!val) return;
+      seen.add(val);
+      segs.push({ by: l.by || 'Unknown', val });
+    });
+    if (seen.size <= 1) return segs[0] ? segs[0].val : '';
+    return segs.map(s => s.by + ': ' + s.val).join(' | ');
+  };
+
+  const notes = sorted
+    .filter(l => l.notes)
+    .map(l => '[' + (l.by || 'Unknown') + '] ' + l.notes)
+    .join('\n');
+
+  const reps = [...new Set(sorted.map(l => l.by).filter(Boolean))];
+
+  return {
+    fname: pickBest('fname'),
+    lname: pickBest('lname'),
+    company: pickBest('company'),
+    role: pickBest('role'),
+    phone: pickBest('phone'),
+    email: pickBest('email'),
+    linkedin: pickBest('linkedin'),
+    interest: perRep('interest'),
+    products: perRep('products', arr => (arr || []).join('; ')),
+    techstack: perRep('techstack'),
+    followup: perRep('followup'),
+    notes,
+    by: reps.join('; '),
+    mergedCount: sorted.length,
+    firstLoggedTs: sorted[0].ts,
+    lastLoggedTs: sorted[sorted.length - 1].ts
+  };
+}
+
+function exportCSV() {
+  if (leads.length === 0) { toast('No leads to export', true); return; }
+
+  const groups = {};
+  leads.forEach(l => {
+    const key = dedupeKey(l);
+    (groups[key] = groups[key] || []).push(l);
+  });
+  const merged = Object.values(groups).map(mergeLeadGroup);
+
+  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Phone', 'Email', 'LinkedIn', 'Interest', 'Products', 'Tech Stack', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
+  const rows = merged.map(l => [
+    currentEvent, l.fname, l.lname, l.company, l.role, l.phone, l.email, l.linkedin, l.interest,
+    l.products, l.techstack, l.followup, l.notes, l.by, l.mergedCount,
+    new Date(l.firstLoggedTs).toISOString(), new Date(l.lastLoggedTs).toISOString()
+  ]);
+  const csv = [headers, ...rows].map(r =>
+    r.map(c => '"' + String(c || '').replace(/"/g, '""') + '"').join(',')
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = normalizeName(currentEvent) + '-leads-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+
+  const dupeCount = leads.length - merged.length;
+  toast(dupeCount > 0
+    ? ('Exported ' + merged.length + ' leads (' + dupeCount + ' duplicates merged)')
+    : ('Exported ' + merged.length + ' leads'));
+}
+
+function switchView(v) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === v));
+  document.getElementById('view-capture').style.display = v === 'capture' ? 'block' : 'none';
+  document.getElementById('view-leads').style.display = v === 'leads' ? 'block' : 'none';
+  document.getElementById('view-mycard').style.display = v === 'mycard' ? 'block' : 'none';
+  if (v === 'mycard') renderMyCard();
+}
+
+function loadMyCardProfile() {
+  const remote = cardProfiles[normalizeName(me)];
+  if (remote) return remote;
+
+  const scopedKey = 'leadtracker_card_profile:' + normalizeName(me);
+  try {
+    const scoped = JSON.parse(localStorage.getItem(scopedKey) || 'null');
+    if (scoped) return scoped;
+  } catch {}
+
+  // One-time migration from the old device-wide key (pre-dates per-name storage),
+  // only used if it actually belongs to the currently logged-in name.
+  try {
+    const legacy = JSON.parse(localStorage.getItem('leadtracker_card_profile') || 'null');
+    if (legacy && normalizeName(legacy.name) === normalizeName(me)) {
+      localStorage.setItem(scopedKey, JSON.stringify(legacy));
+      return legacy;
+    }
+  } catch {}
+
+  return {};
+}
+
+async function saveMyCard() {
+  const name = document.getElementById('card-name').value.trim();
+  if (!name) { toast('Enter your name', true); return; }
+
+  let linkedin = document.getElementById('card-linkedin').value.trim();
+  if (normalizeName(linkedin).replace(/\/$/, '') === normalizeName(LINKEDIN_PREFIX).replace(/\/$/, '')) linkedin = '';
+
+  let email = document.getElementById('card-email').value.trim();
+  if (email === EMAIL_SUFFIX) email = '';
+
+  const profile = {
+    name,
+    loginName: me,
+    company: document.getElementById('card-company').value.trim() || APP_CONFIG.companyName,
+    title: document.getElementById('card-title').value.trim(),
+    phone: document.getElementById('card-phone').value.trim(),
+    email,
+    linkedin,
+    notes: document.getElementById('card-notes').value.trim()
+  };
+  const key = normalizeName(me);
+  localStorage.setItem('leadtracker_card_profile:' + key, JSON.stringify(profile));
+  cardProfiles[key] = profile;
+  renderMyCard();
+  toast('Card updated');
+
+  try {
+    const { db, doc, setDoc } = window._fb;
+    await setDoc(doc(db, 'leadtracker-profiles', key), profile);
+  } catch (err) {
+    console.error('Could not sync card profile:', err);
+  }
+}
+
+function renderMyCard() {
+  const hasMe = !!me;
+  document.getElementById('mycard-empty').classList.toggle('hidden', hasMe);
+  document.getElementById('mycard-form').classList.toggle('hidden', !hasMe);
+  if (!hasMe) return;
+
+  const profile = loadMyCardProfile();
+  const name = profile.name || me;
+  const company = profile.company || APP_CONFIG.companyName;
+  document.getElementById('card-name').value = name;
+  document.getElementById('card-company').value = company;
+  document.getElementById('card-title').value = profile.title || '';
+  document.getElementById('card-phone').value = profile.phone || '';
+
+  const emailInput = document.getElementById('card-email');
+  emailInput.value = profile.email || EMAIL_SUFFIX;
+  emailInput.onfocus = function() {
+    if (this.value === EMAIL_SUFFIX) this.setSelectionRange(0, 0);
+  };
+
+  document.getElementById('card-linkedin').value = profile.linkedin || LINKEDIN_PREFIX;
+  document.getElementById('card-notes').value = profile.notes || NOTES_DEFAULT;
+
+  const nameParts = name.trim().split(/\s+/);
+  const first = nameParts[0] || '';
+  const last = nameParts.slice(1).join(' ');
+
+  const vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'N:' + last + ';' + first + ';;;',
+    'FN:' + name,
+    'ORG:' + company,
+    profile.title ? 'TITLE:' + profile.title : '',
+    profile.phone ? 'TEL;TYPE=CELL:' + profile.phone : '',
+    profile.email ? 'EMAIL:' + profile.email : '',
+    profile.linkedin ? 'URL;TYPE=LinkedIn:' + linkedinHref(profile.linkedin) : '',
+    profile.notes ? 'NOTE:' + profile.notes.replace(/\n/g, '\\n') : '',
+    'END:VCARD'
+  ].filter(Boolean).join('\n');
+
+  const output = document.getElementById('mycard-output');
+  try {
+    if (!myCardQR) {
+      const container = document.getElementById('mycard-qr');
+      container.innerHTML = '';
+      myCardQR = new QRCode(container, {
+        text: vcard, width: 220, height: 220,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } else {
+      myCardQR.makeCode(vcard);
+    }
+  } catch (err) {
+    console.error(err);
+    toast('Could not generate QR code', true);
+    output.classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('mycard-name').textContent = name;
+  document.getElementById('mycard-meta').textContent =
+    [profile.title, company, profile.phone, profile.email].filter(Boolean).join(' · ');
+
+  const linkedinEl = document.getElementById('mycard-linkedin');
+  if (profile.linkedin) {
+    linkedinEl.innerHTML = '<a href="' + esc(linkedinHref(profile.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">LinkedIn &#8599;</a>';
+  } else {
+    linkedinEl.innerHTML = '';
+  }
+  document.getElementById('mycard-notes').textContent = profile.notes || '';
+
+  output.classList.remove('hidden');
+}
+
+function toast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? '#ef4444' : '#10b981';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function linkedinHref(url) {
+  const trimmed = (url || '').trim();
+  if (!trimmed) return '#';
+  return /^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed;
+}
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+window.setMe = setMe;
+window.setEvent = setEvent;
+window.saveMyCard = saveMyCard;
+window.handleCardFile = handleCardFile;
+window.toggleDictation = toggleDictation;
+window.saveLead = saveLead;
+window.startEdit = startEdit;
+window.addLeadToContacts = addLeadToContacts;
+window.cancelEdit = cancelEdit;
+window.delLead = delLead;
+window.switchView = switchView;
+window.exportCSV = exportCSV;
+window.renderLeads = renderLeads;
+
+init();
+</script>
+</body>
+</html>
