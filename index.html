@@ -382,8 +382,12 @@
         <input type="text" id="card-email" autocomplete="off" placeholder="you@loulouniche.com">
       </div>
       <div class="field">
-        <label>Your Instagram / Website</label>
-        <input type="text" id="card-linkedin" autocomplete="off" placeholder="e.g. instagram.com/loulouniche">
+        <label>Website</label>
+        <input type="text" id="card-website" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Instagram</label>
+        <input type="text" id="card-instagram" autocomplete="off">
       </div>
       <div class="field">
         <div class="label-row"><label>Notes</label><span class="label-opt">Optional</span></div>
@@ -394,7 +398,8 @@
         <div class="mycard-qr-wrap"><div id="mycard-qr"></div></div>
         <p class="mycard-name" id="mycard-name"></p>
         <p class="mycard-meta" id="mycard-meta"></p>
-        <p class="mycard-meta" id="mycard-linkedin"></p>
+        <p class="mycard-meta" id="mycard-website"></p>
+        <p class="mycard-meta" id="mycard-instagram"></p>
         <p class="mycard-notes" id="mycard-notes"></p>
         <p class="scan-hint">Hand your phone over, or let them scan &mdash; it saves straight to their contacts.</p>
       </div>
@@ -470,6 +475,10 @@ let unsubscribeLeads = null;
 const APP_CONFIG = {
   companyName: 'LoulouNiche',
   emailDomain: '@loulouniche.com',
+  // Pre-fill the Website / Instagram fields on My Card. Editable, but
+  // these defaults are what every virtual card starts out linking to.
+  website: 'www.loulouniche.com',
+  instagram: '@loulouniche',
   // Shown as multi-select tags on the capture form and as a filter
   // in "All Leads". These match the named packages on loulouniche.com/designservices.
   productOptions: ['Initial Consultation', 'The Refresh', 'The Roadmap', 'Reset + Roadmap', 'Reimagine + Roadmap', 'Signature Transformation', 'Staging', 'Virtual Services'],
@@ -481,7 +490,6 @@ const APP_CONFIG = {
 };
 // ============================================================
 
-const LINKEDIN_PREFIX = '';
 const EMAIL_SUFFIX = APP_CONFIG.emailDomain;
 const NOTES_DEFAULT = APP_CONFIG.notesDefault;
 
@@ -1145,11 +1153,14 @@ async function saveMyCard() {
   const name = document.getElementById('card-name').value.trim();
   if (!name) { toast('Enter your name', true); return; }
 
-  let linkedin = document.getElementById('card-linkedin').value.trim();
-  if (normalizeName(linkedin).replace(/\/$/, '') === normalizeName(LINKEDIN_PREFIX).replace(/\/$/, '')) linkedin = '';
-
   let email = document.getElementById('card-email').value.trim();
   if (email === EMAIL_SUFFIX) email = '';
+
+  let website = document.getElementById('card-website').value.trim();
+  if (website === APP_CONFIG.website) website = '';
+
+  let instagram = document.getElementById('card-instagram').value.trim();
+  if (instagram === APP_CONFIG.instagram) instagram = '';
 
   const profile = {
     name,
@@ -1158,7 +1169,8 @@ async function saveMyCard() {
     title: document.getElementById('card-title').value.trim(),
     phone: document.getElementById('card-phone').value.trim(),
     email,
-    linkedin,
+    website,
+    instagram,
     notes: document.getElementById('card-notes').value.trim()
   };
   const key = normalizeName(me);
@@ -1195,7 +1207,11 @@ function renderMyCard() {
     if (this.value === EMAIL_SUFFIX) this.setSelectionRange(0, 0);
   };
 
-  document.getElementById('card-linkedin').value = profile.linkedin || LINKEDIN_PREFIX;
+  const website = profile.website || APP_CONFIG.website;
+  const instagram = profile.instagram || APP_CONFIG.instagram;
+  document.getElementById('card-website').value = website;
+  document.getElementById('card-instagram').value = instagram;
+
   document.getElementById('card-notes').value = profile.notes || NOTES_DEFAULT;
 
   const nameParts = name.trim().split(/\s+/);
@@ -1211,7 +1227,8 @@ function renderMyCard() {
     profile.title ? 'TITLE:' + profile.title : '',
     profile.phone ? 'TEL;TYPE=CELL:' + profile.phone : '',
     profile.email ? 'EMAIL:' + profile.email : '',
-    profile.linkedin ? 'URL;TYPE=Social:' + linkedinHref(profile.linkedin) : '',
+    'URL;TYPE=Website:' + linkedinHref(website),
+    'URL;TYPE=Instagram:' + instagramHref(instagram),
     profile.notes ? 'NOTE:' + profile.notes.replace(/\n/g, '\\n') : '',
     'END:VCARD'
   ].filter(Boolean).join('\n');
@@ -1239,12 +1256,10 @@ function renderMyCard() {
   document.getElementById('mycard-meta').textContent =
     [profile.title, company, profile.phone, profile.email].filter(Boolean).join(' · ');
 
-  const linkedinEl = document.getElementById('mycard-linkedin');
-  if (profile.linkedin) {
-    linkedinEl.innerHTML = '<a href="' + esc(linkedinHref(profile.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">Profile &#8599;</a>';
-  } else {
-    linkedinEl.innerHTML = '';
-  }
+  document.getElementById('mycard-website').innerHTML =
+    '<a href="' + esc(linkedinHref(website)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">Website &#8599;</a>';
+  document.getElementById('mycard-instagram').innerHTML =
+    '<a href="' + esc(instagramHref(instagram)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">Instagram &#8599;</a>';
   document.getElementById('mycard-notes').textContent = profile.notes || '';
 
   output.classList.remove('hidden');
@@ -1262,6 +1277,13 @@ function linkedinHref(url) {
   const trimmed = (url || '').trim();
   if (!trimmed) return '#';
   return /^https?:\/\//i.test(trimmed) ? trimmed : 'https://' + trimmed;
+}
+
+function instagramHref(handle) {
+  const trimmed = (handle || '').trim();
+  if (!trimmed) return '#';
+  if (/^https?:\/\//i.test(trimmed) || /instagram\.com/i.test(trimmed)) return linkedinHref(trimmed);
+  return 'https://www.instagram.com/' + trimmed.replace(/^@/, '');
 }
 
 function esc(s) {
