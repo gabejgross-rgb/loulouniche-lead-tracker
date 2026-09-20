@@ -203,8 +203,9 @@
     margin-bottom: 14px;
   }
   .modal-select-wrap select {
-    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-    padding: 12px; border-radius: 8px; font-size: 16px; font-family: inherit; width: 100%;
+    background: var(--surface-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="%236B6659" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 14px center;
+    border: 1px solid var(--border); color: var(--text);
+    padding: 12px 36px 12px 12px; border-radius: 8px; font-size: 16px; font-family: inherit; width: 100%;
     margin-bottom: 14px; -webkit-appearance: none; appearance: none;
   }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
@@ -531,8 +532,22 @@ function normalizeName(name) {
 
 function getKnownNames() {
   const names = new Set();
+  if (me) names.add(me);
   Object.values(cardProfiles).forEach(p => (p.loginName || p.name) && names.add(p.loginName || p.name));
   leads.forEach(l => l.by && names.add(l.by));
+  // Also check this device's own storage, so the switcher still offers
+  // known names even when Firestore isn't reachable (e.g. no backend
+  // configured yet) or hasn't synced.
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('leadtracker_card_profile:')) continue;
+      try {
+        const p = JSON.parse(localStorage.getItem(k) || 'null');
+        if (p && (p.loginName || p.name)) names.add(p.loginName || p.name);
+      } catch {}
+    }
+  } catch {}
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
