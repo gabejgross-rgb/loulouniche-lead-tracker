@@ -143,7 +143,6 @@
   .b-product { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(116,107,88,0.3); }
   .b-context { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
   .lead-notes { font-size: 13px; color: var(--text); margin-top: 10px; line-height: 1.5; white-space: pre-wrap; }
-  .lead-source { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
   .lead-time { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
   .del {
     background: transparent; border: none; color: var(--text-faint);
@@ -321,11 +320,8 @@
         <div class="seg four multi" id="product-seg"></div>
       </div>
       <div class="field">
-        <label>How They Heard About Us</label>
-        <div class="field-input">
-          <input type="text" id="source" autocomplete="off" placeholder="e.g. Instagram, Google, referral, word of mouth...">
-          <button type="button" class="mic-btn" data-target="source" onclick="toggleDictation(this)">🎤</button>
-        </div>
+        <label>Lead Source</label>
+        <div class="seg four multi" id="leadsource-seg"></div>
       </div>
       <div class="field">
         <label>Follow-Up</label>
@@ -356,6 +352,9 @@
       </select>
       <select id="filter-product" onchange="renderLeads()">
         <option value="">All products</option>
+      </select>
+      <select id="filter-leadsource" onchange="renderLeads()">
+        <option value="">All sources</option>
       </select>
       <select id="filter-fu" onchange="renderLeads()">
         <option value="">All</option>
@@ -467,6 +466,7 @@ let me = '';
 let interest = '';
 let followup = '';
 let products = [];
+let leadSources = [];
 let editingId = null;
 let activeRecognition = null;
 let activeMicBtn = null;
@@ -486,6 +486,9 @@ const APP_CONFIG = {
   // Shown as multi-select tags on the capture form and as a filter
   // in "All Leads". These match the named packages on loulouniche.com/designservices.
   productOptions: ['Initial Consultation', 'The Refresh', 'The Roadmap', 'Reset + Roadmap', 'Reimagine + Roadmap', 'Signature Transformation', 'Staging', 'Virtual Services'],
+  // Shown as multi-select tags on the capture form and as a filter
+  // in "All Leads". Fixed list — how this lead found LoulouNiche.
+  leadSourceOptions: ['Referral', 'Website', 'Networking', 'Blog', 'Instagram'],
   // Pre-fills the "Notes" field on My Card. Leave '' for no default.
   notesDefault: ''
 };
@@ -505,9 +508,20 @@ function renderProductOptions() {
   document.getElementById('filter-product').innerHTML = filterHtml;
 }
 
+function renderLeadSourceOptions() {
+  const segHtml = APP_CONFIG.leadSourceOptions
+    .map(s => '<button type="button" data-val="' + esc(s) + '">' + esc(s) + '</button>').join('');
+  document.getElementById('leadsource-seg').innerHTML = segHtml;
+
+  const filterHtml = '<option value="">All sources</option>' +
+    APP_CONFIG.leadSourceOptions.map(s => '<option value="' + esc(s) + '">' + esc(s) + '</option>').join('');
+  document.getElementById('filter-leadsource').innerHTML = filterHtml;
+}
+
 async function init() {
   document.getElementById('company-logo').textContent = APP_CONFIG.companyName;
   renderProductOptions();
+  renderLeadSourceOptions();
   me = localStorage.getItem('leadtracker_me') || '';
   currentEvent = localStorage.getItem('leadtracker_event') || '';
   if (me) document.getElementById('me-name').textContent = me;
@@ -699,6 +713,15 @@ function setupSegments() {
       else products.push(val);
     });
   });
+  // Multi-select: lead source
+  document.querySelectorAll('#leadsource-seg button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('on');
+      const val = btn.dataset.val;
+      if (leadSources.includes(val)) leadSources = leadSources.filter(s => s !== val);
+      else leadSources.push(val);
+    });
+  });
 }
 
 async function handleCardFile(event) {
@@ -881,7 +904,7 @@ async function saveLead(e) {
     linkedin: document.getElementById('linkedin').value.trim(),
     interest,
     products: products.slice(),
-    source: document.getElementById('source').value.trim(),
+    leadSource: leadSources.slice(),
     followup,
     notes: document.getElementById('notes').value.trim()
   };
@@ -905,7 +928,7 @@ async function saveLead(e) {
       await addDoc(leadsCol, { ts: Date.now(), by: me, event: currentEvent, ...fields });
       document.getElementById('lead-form').reset();
       document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
-      interest = ''; followup = ''; products = [];
+      interest = ''; followup = ''; products = []; leadSources = [];
       toast('Saved');
     }
   } catch (err) {
@@ -931,15 +954,16 @@ function startEdit(id) {
   document.getElementById('phone').value = l.phone || '';
   document.getElementById('email').value = l.email || '';
   document.getElementById('linkedin').value = l.linkedin || '';
-  document.getElementById('source').value = l.source || '';
   document.getElementById('notes').value = l.notes || '';
 
   interest = l.interest || '';
   followup = l.followup || '';
   products = (l.products || []).slice();
+  leadSources = (l.leadSource || []).slice();
   document.querySelectorAll('#interest-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === interest));
   document.querySelectorAll('#followup-seg button').forEach(b => b.classList.toggle('on', b.dataset.val === followup));
   document.querySelectorAll('#product-seg button').forEach(b => b.classList.toggle('on', products.includes(b.dataset.val)));
+  document.querySelectorAll('#leadsource-seg button').forEach(b => b.classList.toggle('on', leadSources.includes(b.dataset.val)));
 
   document.getElementById('save-btn').textContent = 'Update Lead';
   document.getElementById('cancel-edit-btn').classList.remove('hidden');
@@ -951,7 +975,7 @@ function cancelEdit() {
   editingId = null;
   document.getElementById('lead-form').reset();
   document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
-  interest = ''; followup = ''; products = [];
+  interest = ''; followup = ''; products = []; leadSources = [];
   document.getElementById('save-btn').textContent = 'Save Lead';
   document.getElementById('cancel-edit-btn').classList.add('hidden');
 }
@@ -960,11 +984,13 @@ function renderLeads() {
   const list = document.getElementById('leads-list');
   const fInt = document.getElementById('filter-interest').value;
   const fProd = document.getElementById('filter-product').value;
+  const fSrc = document.getElementById('filter-leadsource').value;
   const fFu = document.getElementById('filter-fu').value;
   const fBy = document.getElementById('filter-by').value;
   let filtered = leads;
   if (fInt) filtered = filtered.filter(l => l.interest === fInt);
   if (fProd) filtered = filtered.filter(l => (l.products || []).includes(fProd));
+  if (fSrc) filtered = filtered.filter(l => (l.leadSource || []).includes(fSrc));
   if (fFu) filtered = filtered.filter(l => l.followup === fFu);
   if (fBy) filtered = filtered.filter(l => l.by === fBy);
 
@@ -980,6 +1006,7 @@ function renderLeads() {
     const time = new Date(l.ts).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
     const intClass = 'b-' + (l.interest || '').toLowerCase();
     const prods = (l.products || []).map(p => '<span class="badge b-product">' + esc(p) + '</span>').join('');
+    const srcs = (l.leadSource || []).map(s => '<span class="badge b-context">' + esc(s) + '</span>').join('');
     const dupeCount = dupeCounts[dedupeKey(l)];
     const dupeBadge = dupeCount > 1 ? '<span class="badge b-dup">Possible duplicate &times;' + dupeCount + '</span>' : '';
     const editedNote = l.lastEditedBy ? ' &middot; edited by ' + esc(l.lastEditedBy) : '';
@@ -998,11 +1025,11 @@ function renderLeads() {
       '<div class="badges">' +
         '<span class="badge ' + intClass + '">' + esc(l.interest) + '</span>' +
         prods +
+        srcs +
         (l.followup === 'Yes' ? '<span class="badge b-fu">Follow-up</span>' : '') +
         '<span class="badge b-by">' + esc(l.by) + '</span>' +
         dupeBadge +
       '</div>' +
-      (l.source ? '<div class="lead-source">Source: ' + esc(l.source) + '</div>' : '') +
       (l.notes ? '<div class="lead-notes">' + esc(l.notes) + '</div>' : '') +
       '<div class="lead-time">' + time + editedNote + '</div>' +
     '</div>';
@@ -1111,7 +1138,7 @@ function mergeLeadGroup(group) {
     linkedin: pickBest('linkedin'),
     interest: perRep('interest'),
     products: perRep('products', arr => (arr || []).join('; ')),
-    source: perRep('source'),
+    leadSource: perRep('leadSource', arr => (arr || []).join('; ')),
     followup: perRep('followup'),
     notes,
     by: reps.join('; '),
@@ -1131,10 +1158,10 @@ function exportCSV() {
   });
   const merged = Object.values(groups).map(mergeLeadGroup);
 
-  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Neighborhood', 'Phone', 'Email', 'Instagram/Website', 'Interest', 'Products', 'How They Heard', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
+  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Neighborhood', 'Phone', 'Email', 'Instagram/Website', 'Interest', 'Products', 'Lead Source', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
   const rows = merged.map(l => [
     currentEvent, l.fname, l.lname, l.company, l.role, l.neighborhood, l.phone, l.email, l.linkedin, l.interest,
-    l.products, l.source, l.followup, l.notes, l.by, l.mergedCount,
+    l.products, l.leadSource, l.followup, l.notes, l.by, l.mergedCount,
     new Date(l.firstLoggedTs).toISOString(), new Date(l.lastLoggedTs).toISOString()
   ]);
   const csv = [headers, ...rows].map(r =>

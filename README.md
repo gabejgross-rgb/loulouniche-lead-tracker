@@ -8,7 +8,7 @@ Branding and fields are already customized in `index.html` for LoulouNiche's bus
 
 - **Company**: LoulouNiche
 - **Service tags**: the actual named packages from loulouniche.com/designservices — Initial Consultation, The Refresh, The Roadmap, Reset + Roadmap, Reimagine + Roadmap, Signature Transformation, Staging, Virtual Services
-- **Fields**: Company/Role are now optional and meant for referral partners (agents, stagers) whose business cards get scanned; added a **Neighborhood** field (useful for routing NYC jobs); renamed "Tech Stack" to **How They Heard About Us** (Instagram, Google, referral, word of mouth — mirrors the question already on her site's "Get in Touch" form); renamed "LinkedIn" to **Instagram / Website** since that's her primary channel.
+- **Fields**: Company/Role are now optional and meant for referral partners (agents, stagers) whose business cards get scanned; added a **Neighborhood** field (useful for routing NYC jobs); added a fixed multi-select **Lead Source** (Referral, Website, Networking, Blog, Instagram — she doesn't work conferences/events, so this replaced the original "Tech Stack" field); renamed "LinkedIn" to **Instagram / Website** since that's her primary channel.
 - **Visual design**: rebuilt to match her actual site palette, sampled live from loulouniche.com — cream background (`#F2F1EC`), charcoal text (`#2E2D2A`), and her exact olive/taupe accent (`#746B58`) from the "Book Consult" button, instead of the template's dark theme and default orange. The header wordmark uses a boxed serif small-caps treatment echoing her real logo.
 
 **Still needed before this is live** (these require creating accounts, which is a step only Hala/Gabe can do):
