@@ -434,16 +434,13 @@
     onSnapshot, setDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // Create your own Firebase project at https://console.firebase.google.com
-  // (Firestore in Native mode, no auth needed) and paste its config here.
-  // Project Settings → General → Your apps → SDK setup and configuration.
   const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_PROJECT.firebaseapp.com",
-    projectId:         "YOUR_PROJECT",
-    storageBucket:     "YOUR_PROJECT.firebasestorage.app",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId:             "YOUR_APP_ID"
+    apiKey:            "AIzaSyCm0khFbT-d4_sPyC1urJ86X5XiSM6yPGU",
+    authDomain:        "loulouniche-lead-tracker.firebaseapp.com",
+    projectId:         "loulouniche-lead-tracker",
+    storageBucket:     "loulouniche-lead-tracker.firebasestorage.app",
+    messagingSenderId: "278209095951",
+    appId:             "1:278209095951:web:f4cd2bd747905e8e87b67a"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -468,6 +465,9 @@ let activeMicBtn = null;
 let myCardQR = null;
 let cardProfiles = {};
 let unsubscribeLeads = null;
+let resolveProfilesReady, resolveLeadsReady;
+const profilesReady = new Promise(r => resolveProfilesReady = r);
+const leadsReady = new Promise(r => resolveLeadsReady = r);
 
 // ============================================================
 // CUSTOMIZE FOR YOUR BUSINESS — this is the only block you should
@@ -523,7 +523,17 @@ async function init() {
   if (me) document.getElementById('me-name').textContent = me;
   setupSegments();
 
-  if (!me) await setMe();
+  if (!me) {
+    // Give Firestore a brief window to deliver its first snapshot of
+    // known profiles/leads, so a first-time login on a new device can
+    // still show existing names in the picker instead of racing ahead
+    // with whatever (possibly nothing) has loaded so far.
+    await Promise.race([
+      Promise.all([profilesReady, leadsReady]),
+      new Promise(r => setTimeout(r, 2500))
+    ]);
+    await setMe();
+  }
 }
 
 function normalizeName(name) {
@@ -556,8 +566,12 @@ function subscribeProfiles() {
   onSnapshot(profilesCol, snap => {
     cardProfiles = {};
     snap.docs.forEach(d => { cardProfiles[d.id] = d.data(); });
+    resolveProfilesReady();
     if (document.getElementById('view-mycard').style.display !== 'none') renderMyCard();
-  }, err => console.error('Profile snapshot error:', err));
+  }, err => {
+    console.error('Profile snapshot error:', err);
+    resolveProfilesReady();
+  });
 }
 
 window.addEventListener('fb-ready', () => {
@@ -812,10 +826,12 @@ function subscribeLeads() {
     updateCount();
     refreshByFilter();
     renderLeads();
+    resolveLeadsReady();
   }, err => {
     console.error('Snapshot error:', err);
     setStatus(false);
     toast('Connection error', true);
+    resolveLeadsReady();
   });
 }
 
