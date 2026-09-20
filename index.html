@@ -47,7 +47,6 @@
     font-variant: small-caps; letter-spacing: 0.06em;
     border: 1px solid var(--text); padding: 3px 10px;
   }
-  .event-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
   .count { font-size: 12px; color: var(--text-dim); }
   .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); margin-right: 6px; vertical-align: middle; }
   .status-dot.online { background: var(--green); }
@@ -86,9 +85,6 @@
   .seg button.on[data-val="Cold"] { background: var(--cold); color: white; border-color: var(--cold); }
   .seg button.on[data-val="Yes"]  { background: var(--green); color: white; border-color: var(--green); }
   .seg button.on[data-val="No"]   { background: var(--surface-2); color: var(--text); border-color: var(--text-dim); }
-  .seg button.on[data-val="LPP Event"]  { background: var(--accent); color: white; border-color: var(--accent); }
-  .seg button.on[data-val="Table Conversation"] { background: var(--accent); color: white; border-color: var(--accent); }
-  .seg button.on[data-val="Other"] { background: var(--accent); color: white; border-color: var(--accent); }
   .seg.multi button.on { background: var(--accent); color: white; border-color: var(--accent); }
   .save {
     padding: 16px; background: var(--accent); color: white;
@@ -226,7 +222,6 @@
   <header>
     <div class="header-left">
       <div class="logo" id="company-logo">LoulouNiche</div>
-      <div class="event-name" id="event-name">No event selected</div>
     </div>
     <div class="count"><span class="status-dot" id="status-dot"></span><span id="count">0 leads</span></div>
   </header>
@@ -234,11 +229,6 @@
   <div class="me-banner">
     <span>Logging as <b id="me-name">—</b></span>
     <button onclick="setMe()">Change</button>
-  </div>
-
-  <div class="me-banner">
-    <span>Event <b id="event-display-name">—</b></span>
-    <button onclick="setEvent()">Change</button>
   </div>
 
   <div class="tabs">
@@ -435,7 +425,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import {
     getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
-    onSnapshot, query, where, setDoc
+    onSnapshot, setDoc
   } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   // Create your own Firebase project at https://console.firebase.google.com
@@ -454,9 +444,8 @@
   const db = getFirestore(app);
   const leadsCol = collection(db, "leadtracker-leads");
   const profilesCol = collection(db, "leadtracker-profiles");
-  const eventsCol = collection(db, "leadtracker-events");
 
-  window._fb = { db, leadsCol, profilesCol, eventsCol, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot, query, where };
+  window._fb = { db, leadsCol, profilesCol, addDoc, updateDoc, deleteDoc, doc, setDoc, onSnapshot };
   window.dispatchEvent(new Event('fb-ready'));
 </script>
 
@@ -472,8 +461,6 @@ let activeRecognition = null;
 let activeMicBtn = null;
 let myCardQR = null;
 let cardProfiles = {};
-let currentEvent = '';
-let eventsMap = {};
 let unsubscribeLeads = null;
 
 // ============================================================
@@ -520,16 +507,14 @@ function renderLeadSourceOptions() {
 
 async function init() {
   document.getElementById('company-logo').textContent = APP_CONFIG.companyName;
+  document.title = APP_CONFIG.companyName + ' — Lead Tracker';
   renderProductOptions();
   renderLeadSourceOptions();
   me = localStorage.getItem('leadtracker_me') || '';
-  currentEvent = localStorage.getItem('leadtracker_event') || '';
   if (me) document.getElementById('me-name').textContent = me;
-  updateEventDisplay();
   setupSegments();
 
   if (!me) await setMe();
-  if (!currentEvent) await setEvent();
 }
 
 function normalizeName(name) {
@@ -543,45 +528,6 @@ function getKnownNames() {
   return [...names].sort((a, b) => a.localeCompare(b));
 }
 
-function getKnownEventNames() {
-  return Object.values(eventsMap).map(e => e.name).sort((a, b) => a.localeCompare(b));
-}
-
-function updateEventDisplay() {
-  document.getElementById('event-name').textContent = currentEvent || 'No event selected';
-  document.getElementById('event-display-name').textContent = currentEvent || '—';
-  document.title = (currentEvent || APP_CONFIG.companyName) + ' — Lead Tracker';
-}
-
-async function setEvent() {
-  const name = await showModal({
-    message: "Which event are you at?",
-    withInput: true,
-    selectOptions: getKnownEventNames(),
-    defaultValue: currentEvent || '',
-    confirmLabel: 'Save',
-    newOptionLabel: '+ Add new event',
-    placeholderLabel: 'Select or add your event'
-  });
-  if (name) {
-    currentEvent = name;
-    localStorage.setItem('leadtracker_event', currentEvent);
-    updateEventDisplay();
-
-    const key = normalizeName(currentEvent);
-    if (!eventsMap[key]) {
-      eventsMap[key] = { name: currentEvent };
-      try {
-        const { db, doc, setDoc } = window._fb;
-        await setDoc(doc(db, 'leadtracker-events', key), { name: currentEvent, createdAt: Date.now() });
-      } catch (err) {
-        console.error('Could not save event:', err);
-      }
-    }
-    subscribeLeads();
-  }
-}
-
 function subscribeProfiles() {
   const { profilesCol, onSnapshot } = window._fb;
   onSnapshot(profilesCol, snap => {
@@ -591,17 +537,8 @@ function subscribeProfiles() {
   }, err => console.error('Profile snapshot error:', err));
 }
 
-function subscribeEvents() {
-  const { eventsCol, onSnapshot } = window._fb;
-  onSnapshot(eventsCol, snap => {
-    eventsMap = {};
-    snap.docs.forEach(d => { eventsMap[d.id] = d.data(); });
-  }, err => console.error('Events snapshot error:', err));
-}
-
 window.addEventListener('fb-ready', () => {
   subscribeProfiles();
-  subscribeEvents();
   subscribeLeads();
 });
 
@@ -845,15 +782,8 @@ function resizeImageToBase64(file) {
 
 function subscribeLeads() {
   if (unsubscribeLeads) { unsubscribeLeads(); unsubscribeLeads = null; }
-  if (!currentEvent) {
-    leads = [];
-    updateCount();
-    renderLeads();
-    return;
-  }
-  const { leadsCol, onSnapshot, query, where } = window._fb;
-  const q = query(leadsCol, where('event', '==', currentEvent));
-  unsubscribeLeads = onSnapshot(q, snap => {
+  const { leadsCol, onSnapshot } = window._fb;
+  unsubscribeLeads = onSnapshot(leadsCol, snap => {
     leads = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => b.ts - a.ts);
     setStatus(true);
     updateCount();
@@ -888,7 +818,6 @@ function refreshByFilter() {
 async function saveLead(e) {
   e.preventDefault();
   if (!me) { await setMe(); if (!me) return false; }
-  if (!currentEvent) { await setEvent(); if (!currentEvent) return false; }
   if (!interest) { toast('Pick interest level', true); return false; }
   if (!followup) { toast('Pick follow-up', true); return false; }
   if (!window._fb) { toast('Not connected yet', true); return false; }
@@ -925,7 +854,7 @@ async function saveLead(e) {
       cancelEdit();
     } else {
       btn.textContent = 'Saving...';
-      await addDoc(leadsCol, { ts: Date.now(), by: me, event: currentEvent, ...fields });
+      await addDoc(leadsCol, { ts: Date.now(), by: me, ...fields });
       document.getElementById('lead-form').reset();
       document.querySelectorAll('.seg button').forEach(b => b.classList.remove('on'));
       interest = ''; followup = ''; products = []; leadSources = [];
@@ -1158,9 +1087,9 @@ function exportCSV() {
   });
   const merged = Object.values(groups).map(mergeLeadGroup);
 
-  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Neighborhood', 'Phone', 'Email', 'Instagram/Website', 'Interest', 'Products', 'Lead Source', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
+  const headers = ['First Name', 'Last Name', 'Company', 'Role', 'Neighborhood', 'Phone', 'Email', 'Instagram/Website', 'Interest', 'Products', 'Lead Source', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
   const rows = merged.map(l => [
-    currentEvent, l.fname, l.lname, l.company, l.role, l.neighborhood, l.phone, l.email, l.linkedin, l.interest,
+    l.fname, l.lname, l.company, l.role, l.neighborhood, l.phone, l.email, l.linkedin, l.interest,
     l.products, l.leadSource, l.followup, l.notes, l.by, l.mergedCount,
     new Date(l.firstLoggedTs).toISOString(), new Date(l.lastLoggedTs).toISOString()
   ]);
@@ -1171,7 +1100,7 @@ function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = normalizeName(currentEvent) + '-leads-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.download = normalizeName(APP_CONFIG.companyName) + '-leads-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
 
@@ -1342,7 +1271,6 @@ function esc(s) {
 }
 
 window.setMe = setMe;
-window.setEvent = setEvent;
 window.saveMyCard = saveMyCard;
 window.handleCardFile = handleCardFile;
 window.toggleDictation = toggleDictation;
