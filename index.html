@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0a0a0a">
-<title>Lead Tracker</title>
+<meta name="theme-color" content="#F2F1EC">
+<title>LoulouNiche Lead Tracker</title>
 <style>
   :root {
-    --bg: #0a0a0a;
-    --surface: #151515;
-    --surface-2: #1f1f1f;
-    --border: #2a2a2a;
-    --text: #f5f5f5;
-    --text-dim: #999;
-    --text-faint: #666;
-    --accent: #F26C38;
-    --accent-dim: rgba(242,108,56,0.15);
-    --hot: #ef4444;
-    --warm: #f59e0b;
-    --cold: #3b82f6;
-    --green: #10b981;
+    /* LoulouNiche brand palette, sampled from loulouniche.com */
+    --bg: #F2F1EC;
+    --surface: #FFFFFF;
+    --surface-2: #EAE7DD;
+    --border: #DAD5C8;
+    --text: #2E2D2A;
+    --text-dim: #6B6659;
+    --text-faint: #8C8777;
+    --accent: #746B58;
+    --accent-dim: rgba(116,107,88,0.12);
+    --hot: #C0392B;
+    --warm: #B8862E;
+    --cold: #4A6B8A;
+    --green: #3F6B4C;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -40,7 +41,12 @@
   }
   .header-left { display: flex; flex-direction: column; gap: 6px; }
   .logo img { height: 24px; }
-  .logo { font-size: 20px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+  .logo {
+    display: inline-block; font-size: 15px; font-weight: 500; color: var(--text);
+    font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    font-variant: small-caps; letter-spacing: 0.06em;
+    border: 1px solid var(--text); padding: 3px 10px;
+  }
   .event-name { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
   .count { font-size: 12px; color: var(--text-dim); }
   .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--text-faint); margin-right: 6px; vertical-align: middle; }
@@ -134,10 +140,10 @@
   .b-cold { background: var(--cold); color: white; }
   .b-fu { background: var(--green); color: white; }
   .b-by { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
-  .b-product { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(242,108,56,0.3); }
+  .b-product { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(116,107,88,0.3); }
   .b-context { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
   .lead-notes { font-size: 13px; color: var(--text); margin-top: 10px; line-height: 1.5; white-space: pre-wrap; }
-  .lead-techstack { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
+  .lead-source { font-size: 12px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
   .lead-time { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
   .del {
     background: transparent; border: none; color: var(--text-faint);
@@ -169,7 +175,7 @@
     background: transparent; border: none; color: var(--text-faint);
     font-size: 15px; cursor: pointer; padding: 4px 8px;
   }
-  .b-dup { background: rgba(245,158,11,0.15); color: var(--warm); border: 1px solid rgba(245,158,11,0.35); }
+  .b-dup { background: rgba(184,134,46,0.15); color: var(--warm); border: 1px solid rgba(184,134,46,0.35); }
   .lead-linkedin-link { color: var(--accent); text-decoration: none; font-weight: 600; }
   .mycard-output { text-align: center; margin-top: 20px; }
   .mycard-qr-wrap {
@@ -220,7 +226,7 @@
 <div class="wrap">
   <header>
     <div class="header-left">
-      <div class="logo" id="company-logo">Your Company</div>
+      <div class="logo" id="company-logo">LoulouNiche</div>
       <div class="event-name" id="event-name">No event selected</div>
     </div>
     <div class="count"><span class="status-dot" id="status-dot"></span><span id="count">0 leads</span></div>
@@ -264,17 +270,24 @@
         </div>
       </div>
       <div class="field">
-        <label>Company</label>
+        <div class="label-row"><label>Company</label><span class="label-opt">If a referral partner</span></div>
         <div class="field-input">
-          <input type="text" id="company" required autocomplete="off">
+          <input type="text" id="company" autocomplete="off" placeholder="e.g. Compass, Corcoran — blank for individual clients">
           <button type="button" class="mic-btn" data-target="company" onclick="toggleDictation(this)">🎤</button>
         </div>
       </div>
       <div class="field">
         <label>Role / Title</label>
         <div class="field-input">
-          <input type="text" id="role" autocomplete="off">
+          <input type="text" id="role" autocomplete="off" placeholder="e.g. Listing Agent, homeowner">
           <button type="button" class="mic-btn" data-target="role" onclick="toggleDictation(this)">🎤</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Neighborhood</label>
+        <div class="field-input">
+          <input type="text" id="neighborhood" autocomplete="off" placeholder="e.g. Upper West Side, Park Slope...">
+          <button type="button" class="mic-btn" data-target="neighborhood" onclick="toggleDictation(this)">🎤</button>
         </div>
       </div>
       <div class="field">
@@ -292,8 +305,8 @@
         </div>
       </div>
       <div class="field">
-        <label>LinkedIn URL</label>
-        <input type="text" id="linkedin" autocomplete="off" placeholder="linkedin.com/in/...">
+        <label>Instagram / Website</label>
+        <input type="text" id="linkedin" autocomplete="off" placeholder="instagram.com/... or their website">
       </div>
       <div class="field">
         <label>Interest</label>
@@ -308,10 +321,10 @@
         <div class="seg four multi" id="product-seg"></div>
       </div>
       <div class="field">
-        <label>Current Tech Stack / Status</label>
+        <label>How They Heard About Us</label>
         <div class="field-input">
-          <input type="text" id="techstack" autocomplete="off" placeholder="e.g. Relativity, manual process, evaluating...">
-          <button type="button" class="mic-btn" data-target="techstack" onclick="toggleDictation(this)">🎤</button>
+          <input type="text" id="source" autocomplete="off" placeholder="e.g. Instagram, Google, referral, word of mouth...">
+          <button type="button" class="mic-btn" data-target="source" onclick="toggleDictation(this)">🎤</button>
         </div>
       </div>
       <div class="field">
@@ -369,7 +382,7 @@
       </div>
       <div class="field">
         <label>Your Title / Role</label>
-        <input type="text" id="card-title" autocomplete="off" placeholder="e.g. Account Executive">
+        <input type="text" id="card-title" autocomplete="off" placeholder="e.g. Founder & Lead Designer">
       </div>
       <div class="field">
         <label>Your Phone</label>
@@ -377,11 +390,11 @@
       </div>
       <div class="field">
         <label>Your Email</label>
-        <input type="text" id="card-email" autocomplete="off" placeholder="you@yourcompany.com">
+        <input type="text" id="card-email" autocomplete="off" placeholder="you@loulouniche.com">
       </div>
       <div class="field">
-        <label>Your LinkedIn URL</label>
-        <input type="text" id="card-linkedin" autocomplete="off" placeholder="linkedin.com/in/...">
+        <label>Your Instagram / Website</label>
+        <input type="text" id="card-linkedin" autocomplete="off" placeholder="e.g. instagram.com/loulouniche">
       </div>
       <div class="field">
         <div class="label-row"><label>Notes</label><span class="label-opt">Optional</span></div>
@@ -468,17 +481,17 @@ let unsubscribeLeads = null;
 // need to touch to re-brand this app for a new company/use case.
 // ============================================================
 const APP_CONFIG = {
-  companyName: 'Your Company',
-  emailDomain: '@yourcompany.com',
+  companyName: 'LoulouNiche',
+  emailDomain: '@loulouniche.com',
   // Shown as multi-select tags on the capture form and as a filter
-  // in "All Leads". Rename/replace freely — these are just examples.
-  productOptions: ['Category A', 'Category B', 'Category C', 'Category D'],
+  // in "All Leads". These match the named packages on loulouniche.com/designservices.
+  productOptions: ['Initial Consultation', 'The Refresh', 'The Roadmap', 'Reset + Roadmap', 'Reimagine + Roadmap', 'Signature Transformation', 'Staging', 'Virtual Services'],
   // Pre-fills the "Notes" field on My Card. Leave '' for no default.
   notesDefault: ''
 };
 // ============================================================
 
-const LINKEDIN_PREFIX = 'https://www.linkedin.com/in/';
+const LINKEDIN_PREFIX = '';
 const EMAIL_SUFFIX = APP_CONFIG.emailDomain;
 const NOTES_DEFAULT = APP_CONFIG.notesDefault;
 
@@ -862,12 +875,13 @@ async function saveLead(e) {
     lname: document.getElementById('lname').value.trim(),
     company: document.getElementById('company').value.trim(),
     role: document.getElementById('role').value.trim(),
+    neighborhood: document.getElementById('neighborhood').value.trim(),
     phone: document.getElementById('phone').value.trim(),
     email: document.getElementById('email').value.trim(),
     linkedin: document.getElementById('linkedin').value.trim(),
     interest,
     products: products.slice(),
-    techstack: document.getElementById('techstack').value.trim(),
+    source: document.getElementById('source').value.trim(),
     followup,
     notes: document.getElementById('notes').value.trim()
   };
@@ -913,10 +927,11 @@ function startEdit(id) {
   document.getElementById('lname').value = l.lname || '';
   document.getElementById('company').value = l.company || '';
   document.getElementById('role').value = l.role || '';
+  document.getElementById('neighborhood').value = l.neighborhood || '';
   document.getElementById('phone').value = l.phone || '';
   document.getElementById('email').value = l.email || '';
   document.getElementById('linkedin').value = l.linkedin || '';
-  document.getElementById('techstack').value = l.techstack || '';
+  document.getElementById('source').value = l.source || '';
   document.getElementById('notes').value = l.notes || '';
 
   interest = l.interest || '';
@@ -971,9 +986,9 @@ function renderLeads() {
     return '<div class="lead">' +
       '<div class="lead-head"><div>' +
         '<p class="lead-name">' + esc(l.fname) + ' ' + esc(l.lname) + '</p>' +
-        '<p class="lead-meta">' + esc(l.company) + (l.role ? ' &middot; ' + esc(l.role) : '') + '</p>' +
+        '<p class="lead-meta">' + [l.company, l.role, l.neighborhood].filter(Boolean).map(esc).join(' &middot; ') + '</p>' +
         ((l.phone || l.email) ? '<p class="lead-meta">' + [l.phone, l.email].filter(Boolean).map(esc).join(' &middot; ') + '</p>' : '') +
-        (l.linkedin ? '<p class="lead-meta"><a href="' + esc(linkedinHref(l.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">LinkedIn &#8599;</a></p>' : '') +
+        (l.linkedin ? '<p class="lead-meta"><a href="' + esc(linkedinHref(l.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">Profile &#8599;</a></p>' : '') +
       '</div>' +
       '<div class="lead-actions">' +
         '<button class="contact" onclick="addLeadToContacts(\'' + l.id + '\')" title="Save to Contacts">&#128100;</button>' +
@@ -987,7 +1002,7 @@ function renderLeads() {
         '<span class="badge b-by">' + esc(l.by) + '</span>' +
         dupeBadge +
       '</div>' +
-      (l.techstack ? '<div class="lead-techstack">Tech: ' + esc(l.techstack) + '</div>' : '') +
+      (l.source ? '<div class="lead-source">Source: ' + esc(l.source) + '</div>' : '') +
       (l.notes ? '<div class="lead-notes">' + esc(l.notes) + '</div>' : '') +
       '<div class="lead-time">' + time + editedNote + '</div>' +
     '</div>';
@@ -1008,7 +1023,7 @@ function addLeadToContacts(id) {
     l.role ? 'TITLE:' + l.role : '',
     l.phone ? 'TEL;TYPE=CELL:' + l.phone : '',
     l.email ? 'EMAIL:' + l.email : '',
-    l.linkedin ? 'URL;TYPE=LinkedIn:' + linkedinHref(l.linkedin) : '',
+    l.linkedin ? 'URL;TYPE=Social:' + linkedinHref(l.linkedin) : '',
     l.notes ? 'NOTE:' + l.notes.replace(/\n/g, '\\n') : '',
     'END:VCARD'
   ].filter(Boolean).join('\n');
@@ -1090,12 +1105,13 @@ function mergeLeadGroup(group) {
     lname: pickBest('lname'),
     company: pickBest('company'),
     role: pickBest('role'),
+    neighborhood: pickBest('neighborhood'),
     phone: pickBest('phone'),
     email: pickBest('email'),
     linkedin: pickBest('linkedin'),
     interest: perRep('interest'),
     products: perRep('products', arr => (arr || []).join('; ')),
-    techstack: perRep('techstack'),
+    source: perRep('source'),
     followup: perRep('followup'),
     notes,
     by: reps.join('; '),
@@ -1115,10 +1131,10 @@ function exportCSV() {
   });
   const merged = Object.values(groups).map(mergeLeadGroup);
 
-  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Phone', 'Email', 'LinkedIn', 'Interest', 'Products', 'Tech Stack', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
+  const headers = ['Event', 'First Name', 'Last Name', 'Company', 'Role', 'Neighborhood', 'Phone', 'Email', 'Instagram/Website', 'Interest', 'Products', 'How They Heard', 'Follow-Up', 'Notes', 'Captured By', 'Times Logged', 'First Logged', 'Last Logged'];
   const rows = merged.map(l => [
-    currentEvent, l.fname, l.lname, l.company, l.role, l.phone, l.email, l.linkedin, l.interest,
-    l.products, l.techstack, l.followup, l.notes, l.by, l.mergedCount,
+    currentEvent, l.fname, l.lname, l.company, l.role, l.neighborhood, l.phone, l.email, l.linkedin, l.interest,
+    l.products, l.source, l.followup, l.notes, l.by, l.mergedCount,
     new Date(l.firstLoggedTs).toISOString(), new Date(l.lastLoggedTs).toISOString()
   ]);
   const csv = [headers, ...rows].map(r =>
@@ -1239,7 +1255,7 @@ function renderMyCard() {
     profile.title ? 'TITLE:' + profile.title : '',
     profile.phone ? 'TEL;TYPE=CELL:' + profile.phone : '',
     profile.email ? 'EMAIL:' + profile.email : '',
-    profile.linkedin ? 'URL;TYPE=LinkedIn:' + linkedinHref(profile.linkedin) : '',
+    profile.linkedin ? 'URL;TYPE=Social:' + linkedinHref(profile.linkedin) : '',
     profile.notes ? 'NOTE:' + profile.notes.replace(/\n/g, '\\n') : '',
     'END:VCARD'
   ].filter(Boolean).join('\n');
@@ -1269,7 +1285,7 @@ function renderMyCard() {
 
   const linkedinEl = document.getElementById('mycard-linkedin');
   if (profile.linkedin) {
-    linkedinEl.innerHTML = '<a href="' + esc(linkedinHref(profile.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">LinkedIn &#8599;</a>';
+    linkedinEl.innerHTML = '<a href="' + esc(linkedinHref(profile.linkedin)) + '" target="_blank" rel="noopener" class="lead-linkedin-link">Profile &#8599;</a>';
   } else {
     linkedinEl.innerHTML = '';
   }
@@ -1281,7 +1297,7 @@ function renderMyCard() {
 function toast(msg, err) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.style.background = err ? '#ef4444' : '#10b981';
+  t.style.background = err ? '#C0392B' : '#3F6B4C';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 1800);
 }

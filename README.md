@@ -1,6 +1,23 @@
-# Lead Tracker (template)
+# LoulouNiche Lead Tracker
 
-A phone-first lead capture app for conferences and networking events. No build step, no backend server — static HTML/JS + Firebase Firestore + one Netlify Function.
+A phone-first lead capture app for Hala Gross / LoulouNiche (loulouniche.com), built from the generic lead-tracker template below. No build step, no backend server — static HTML/JS + Firebase Firestore + one Netlify Function.
+
+## Status
+
+Branding and fields are already customized in `index.html` for LoulouNiche's business (home design, organization, staging — not the generic conference-sales template this was built from):
+
+- **Company**: LoulouNiche
+- **Service tags**: the actual named packages from loulouniche.com/designservices — Initial Consultation, The Refresh, The Roadmap, Reset + Roadmap, Reimagine + Roadmap, Signature Transformation, Staging, Virtual Services
+- **Fields**: Company/Role are now optional and meant for referral partners (agents, stagers) whose business cards get scanned; added a **Neighborhood** field (useful for routing NYC jobs); renamed "Tech Stack" to **How They Heard About Us** (Instagram, Google, referral, word of mouth — mirrors the question already on her site's "Get in Touch" form); renamed "LinkedIn" to **Instagram / Website** since that's her primary channel.
+- **Visual design**: rebuilt to match her actual site palette, sampled live from loulouniche.com — cream background (`#F2F1EC`), charcoal text (`#2E2D2A`), and her exact olive/taupe accent (`#746B58`) from the "Book Consult" button, instead of the template's dark theme and default orange. The header wordmark uses a boxed serif small-caps treatment echoing her real logo.
+
+**Still needed before this is live** (these require creating accounts, which is a step only Hala/Gabe can do):
+1. Create a Firebase project (Firestore, Native mode) and paste its config into `index.html` — see "Create a Firebase project" below.
+2. Create/connect a Netlify site pointed at this repo and add the `ANTHROPIC_API_KEY` environment variable so business-card scanning works — see "Deploy to Netlify" below.
+
+---
+
+**Below this point is the original template documentation**, kept for reference — e.g. if you ever want to spin up a second tracker (a different business, a sub-brand) from the same base.
 
 **Features:** rep sign-in with a shared name picker, lead capture with voice dictation, business-card photo scanning (Claude vision), inline edit, delete confirmation, duplicate merging with per-rep attribution on CSV export, a digital-business-card QR code (My Card), save-a-lead-to-contacts (.vcf), and support for multiple events from one app (with data kept separate per event).
 
